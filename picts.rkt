@@ -1,9 +1,8 @@
 #lang racket
 (require slideshow/pict
-         slideshow/code
+         pict/code
          slideshow/flash
-         slideshow/base
-         unstable/gui/slideshow
+         unstable/gui/pict
          racket/draw
          (for-syntax syntax/parse)
          syntax/parse/define

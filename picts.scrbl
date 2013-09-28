@@ -13,11 +13,11 @@
     (λ ()
      (parameterize ([sandbox-output 'string]
                     [sandbox-error-output 'string])
-       (make-evaluator 'racket/base #:requires (list 'racket/set "picts.rkt" 'pict/code 'pict 'slideshow/base))))))
-@(main-eval '(require racket/set "picts.rkt" pict/code pict slideshow/base))
+       (make-evaluator 'racket/base #:requires (list 'racket/set "picts.rkt" 'pict/code 'pict))))))
+@(main-eval '(require racket/set "picts.rkt" pict/code pict))
 
 
-@title[#:tag "main"]{Constructors and combinators for @racket[pict]}
+@title[#:tag "picts"]{Constructors and combinators for @racket[pict]}
 
 This library provides some extra support for constructing and combining @racket[pict]s.
 It originated as a helper library for several of my presentations, and since I've had some reuse with them, so might others.
@@ -102,7 +102,7 @@ An interface for staging rows in a @racket[table], that uses @racket[play-n-at] 
 
 @examples[#:eval main-eval
 (define (foo stage)
- (define (angles p) (hc-append (t "〈") p (t "〉")))
+ (define (angles p) (hc-append (text "〈") p (text "〉")))
  (progressive-table stage (list 0 0 1 2) 2
                     (list (angles (code x ρ₁ σ₂)) (code 1)
                           (angles (code (f y) ρ₁ σ₁)) (code 1)
