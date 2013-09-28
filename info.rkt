@@ -4,3 +4,4 @@
 (define deps '("base" "pict-lib" "scribble-lib" "draw-lib" "slideshow-lib"))
 (define setup-collects (list "slideshow-helpers"))
 (define collection "slideshow-helpers")
+(define scribblings "picts.scrbl")
