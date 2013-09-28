@@ -50,7 +50,7 @@ It originated as a helper library for several of my presentations, and since I'v
                                          [h nonneg-real?]
                                          [corner-radius real? -0.25]
                                          [#:color color color/c "black"]
-                                         [#:style style brush-style/c]
+                                         [#:style style brush-style/c 'solid]
                                          [#:angle angle real? 0]
                                          [#:border-width border-width (real-in 0 255) 1]
                                          [#:border-color border-color (or/c #f color/c) #f]
@@ -64,7 +64,6 @@ Like @racket[filled-rounded-rectangle], but adds a border with a pen. Can additi
            [#:x-scale x-scale nonneg-real? 1]
            [#:y-scale y-scale nonneg-real? 1]
            [#:color color color/c "white"]
-           [#:style style brush-style/c]
            [#:angle angle real? 0]
            [#:border-width border-width (real-in 0 255) 1] 
            [#:border-color border-color (or/c #f color/c) #f]
@@ -75,7 +74,7 @@ Uses @racket[thick-filled-rounded-rectangle] to form a frame around a given pict
 @defproc[(filled-flash-frame [pict pict?] [#:scale scale nonneg-real? 1]
                              [#:corner-radius corner-radius real? -0.25]
                              [#:outline outline (or/c #f color/c) #f]
-                             [#:n-points exact-positive-integer? 10]
+                             [#:n-points n-points exact-positive-integer? 10]
                              [#:spike-fraction spike-fraction (real-in 0 1) 1]
                              [#:rotation rotation real? 0])
          pict?]{

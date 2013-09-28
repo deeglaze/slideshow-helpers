@@ -119,9 +119,9 @@ layer different colored ellipses. This produces more consistent borders.
 (thick-filled-rounded-rectangle  w                            
                                  h                            
                                 [corner-radius                
-                                 #:color color]               
+                                 #:color color                
                                  #:style style                
-                                [#:angle angle                
+                                 #:angle angle                
                                  #:border-width border-width  
                                  #:border-color border-color] 
                                  #:border-style border-style) 
@@ -130,7 +130,7 @@ layer different colored ellipses. This produces more consistent borders.
   h : nonneg-real?                                            
   corner-radius : real? = -0.25                               
   color : color/c = "black"                                   
-  style : brush-style/c                                       
+  style : brush-style/c = 'solid                              
   angle : real? = 0                                           
   border-width : (real-in 0 255) = 1                          
   border-color : (or/c #f color/c) = #f                       
@@ -146,9 +146,8 @@ additionally rotate the rectangle by `angle`.
                                  #:scale scale                 
                                  #:x-scale x-scale             
                                  #:y-scale y-scale             
-                                 #:color color]                
-                                 #:style style                 
-                                [#:angle angle                 
+                                 #:color color                 
+                                 #:angle angle                 
                                  #:border-width border-width   
                                  #:border-color border-color]  
                                  #:border-style border-style)  
@@ -159,7 +158,6 @@ additionally rotate the rectangle by `angle`.
   x-scale : nonneg-real? = 1                                   
   y-scale : nonneg-real? = 1                                   
   color : color/c = "white"                                    
-  style : brush-style/c                                        
   angle : real? = 0                                            
   border-width : (real-in 0 255) = 1                           
   border-color : (or/c #f color/c) = #f                        
@@ -172,20 +170,20 @@ The x-axis and y-axis are scaled by `(* scale x-axis)` and `(* scale
 y-axis)` respectively.
 
 ```racket
-(filled-flash-frame  pict                                       
-                    [#:scale scale                              
-                     #:corner-radius corner-radius              
-                     #:outline outline]                         
-                     #:n-points exact-positive-integer?         
-                    [#:spike-fraction spike-fraction            
-                     #:rotation rotation])              -> pict?
-  pict : pict?                                                  
-  scale : nonneg-real? = 1                                      
-  corner-radius : real? = -0.25                                 
-  outline : (or/c #f color/c) = #f                              
-  exact-positive-integer? : 10                                  
-  spike-fraction : (real-in 0 1) = 1                            
-  rotation : real? = 0                                          
+(filled-flash-frame  pict                                    
+                    [#:scale scale                           
+                     #:corner-radius corner-radius           
+                     #:outline outline                       
+                     #:n-points n-points                     
+                     #:spike-fraction spike-fraction         
+                     #:rotation rotation])           -> pict?
+  pict : pict?                                               
+  scale : nonneg-real? = 1                                   
+  corner-radius : real? = -0.25                              
+  outline : (or/c #f color/c) = #f                           
+  n-points : exact-positive-integer? = 10                    
+  spike-fraction : (real-in 0 1) = 1                         
+  rotation : real? = 0                                       
 ```
 
 Use `slideshow/flash` to produce a frame around a given pict. If
