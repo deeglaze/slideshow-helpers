@@ -5,7 +5,6 @@
                      "picts.rkt"
                      racket/set
                      racket/base))
-@(declare-exporting "picts.rkt")
 @(define main-eval
    (make-base-eval)
    #;
@@ -16,8 +15,10 @@
        (make-evaluator 'racket/base #:requires (list 'racket/set "picts.rkt" 'pict/code 'pict))))))
 @(main-eval '(require racket/set "picts.rkt" pict/code pict))
 
-
 @title[#:tag "picts"]{Constructors and combinators for @racket[pict]}
+@(declare-exporting slideshow-helpers/picts)
+@defmodule*/no-declare[(slideshow-helpers/picts)]{}
+
 
 This library provides some extra support for constructing and combining @racket[pict]s.
 It originated as a helper library for several of my presentations, and since I've had some reuse with them, so might others.
@@ -78,7 +79,7 @@ Uses @racket[thick-filled-rounded-rectangle] to form a frame around a given pict
                              [#:spike-fraction spike-fraction (real-in 0 1) 1]
                              [#:rotation rotation real? 0])
          pict?]{
-Use @racket[slideshow/flash] to produce a frame around a given pict. If @racket[outline] not @racket[#f], then additionally draws an outlined flash with the color bound to @racket[outline].}
+Use @racketmodname[pict/flash] to produce a frame around a given pict. If @racket[outline] not @racket[#f], then additionally draws an outlined flash with the color bound to @racket[outline].}
 
 @defproc[(play-n-at [n exact-nonnegative-integer?]
                     [stage exact-nonnegative-integer?]
@@ -108,7 +109,7 @@ An interface for staging rows in a @racket[table], that uses @racket[play-n-at] 
                           (angles (code (f y) ρ₁ σ₁)) (code 1)
                           (angles (code x ρ₅ σ₅)) (code 2)
                           (angles (code (f y) ρ₄ σ₄)) (code 2))
-                    lc-superimpose cc-superimpose gap-size 5))
+                    lc-superimpose cc-superimpose 24 5))
 (foo 0)
 (foo 1)
 (foo 2)]
