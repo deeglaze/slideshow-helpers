@@ -151,6 +151,8 @@
                          #:border-style pen-style/c)
                         pict?)]
                   [mk-center (real? real? pict? pict? . -> . (values real? real?))]
+                  [chop-at (real? real? real? . -> . real?)]
+                  [chopped-interval-scale ((real-in 0 1) (real-in 0 1) . -> . ((real-in 0 1) . -> . (real-in 0 1)))]
                   [annulus
                    (->i ([w nonneg-real?]
                          [h nonneg-real?]
@@ -184,7 +186,7 @@
                         pict?)]
                   [slide-and-compose (->* (pict? (vectorof pict?) pict?)
                                           [(pict? (real-in 0 1) . -> . pict?)]
-                                          pict?)]
+                                          ((real-in 0 1) . -> . pict?))]
                   [play-n-at (exact-nonnegative-integer?
                               exact-nonnegative-integer?
                               (nondecreasing-listof exact-nonnegative-integer?)
@@ -344,7 +346,7 @@
   (λ (n)
      (for/fold ([p* base]) ([ipict (in-vector pict-vec)]
                             [i (in-naturals)])
-       (define interval (chopped-interval-scale (/ i num) (min 1 (/ (add1 i) (- num 2)))))
+       (define interval (chopped-interval-scale (/ i num) (min 1 (/ (add1 i) (max 1 (- num 2))))))
        (define windowed (interval n))
        (slide-pict p* (comp ipict windowed) from-pic ipict (fast-start windowed)))))
 
