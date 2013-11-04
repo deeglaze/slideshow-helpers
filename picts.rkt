@@ -2,6 +2,7 @@
 (require pict
          pict/code
          pict/flash
+         slideshow/play
          unstable/gui/pict
          racket/draw
          (for-syntax syntax/parse)
