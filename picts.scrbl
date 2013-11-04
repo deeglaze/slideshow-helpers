@@ -89,6 +89,16 @@ Use @racketmodname[pict/flash] to produce a frame around a given pict. If @racke
          (listof pict?)]{
 Chunks @racket[picts] into strides of @racket[n], for each number in @racket[stages]. If @racket[stage] is less than or equal to a stage given in @racket[stages], then that stride is present in the output. If not, either stop and produce an empty tail, or ghost the rest of the picts in the tail, depending on @racket[ghost-rest?].}
 
+@defproc[(slide-and-compose [base pict?]
+                            [pict-vec (vectorof pict?)]
+                            [from-pic pict?]
+                            [comp (pict? (real-in 0 1) . -> . pict?) (λ (p n) p)])
+         ((real-in 0 1) . -> . pict?)]{
+Creates a function for use in @racket[play] that slides all picts in @racket[pict-vec]
+to their places in @racket[base], starting from @racket[from-pic].
+While sliding, the pic can be further transformed by @racket[comp].
+All picts in @racket[pict-vec] must be in @racket[base], as well as @racket[from-pic].}
+
 @defproc[(progressive-table [stage exact-nonnegative-integer?]
                             [stages (nondecreasing-listof exact-nonnegative-integer?)]
                             [ncols exact-nonnegative-integer?]

@@ -1,5 +1,5 @@
 #lang racket
-(require slideshow/pict
+(require pict
          pict/code
          pict/flash
          unstable/gui/pict
@@ -166,6 +166,9 @@
                          #:spike-fraction (real-in 0 1)
                          #:rotation real?]
                         pict?)]
+                  [slide-and-compose (->* (pict? (vectorof pict?) pict?)
+                                          [(pict? (real-in 0 1) . -> . pict?)]
+                                          pict?)]
                   [play-n-at (exact-nonnegative-integer?
                               exact-nonnegative-integer?
                               (nondecreasing-listof exact-nonnegative-integer?)
@@ -301,7 +304,33 @@
   (match (pict-draw pict)
     [`(picture ,w ,h) #t] [_ #f]))
 
+(define (chop-at min max i)
+  (cond [(< i min) min]
+        [(> i max) max]
+        [else i]))
+;; unit-interval ∈ [0, 1].
+;; When unit-interval ∈ [min, max], uniformly scale from 0 to 1 as min approaches max.
+;; When unit-interval < min. 0
+;; When unit-interval > max. 1
+(define (chopped-interval-scale min max)
+  (define 1/distance (/ 1 (- max min)))
+  (λ (unit-interval)
+     (cond [(< unit-interval min) 0]
+           [(> unit-interval max) 1]
+           [else (* 1/distance (- unit-interval min))])))
 
+;; All picts in pict-vec must be in base, as well as from-pic.
+;; comp : pict? (real-in 0 1) → pict?
+;; Animation sliding all picts in pict-vec to their places in base,
+;; starting from from-pic. While sliding, the pic can be further transformed by comp.
+(define (slide-and-compose base pict-vec from-pic [comp (λ (p n) p)])
+  (define num (vector-length pict-vec))
+  (λ (n)
+     (for/fold ([p* base]) ([ipict (in-vector pict-vec)]
+                            [i (in-naturals)])
+       (define interval (chopped-interval-scale (/ i num) (min 1 (/ (add1 i) (- num 2)))))
+       (define windowed (interval n))
+       (slide-pict p* (comp ipict windowed) from-pic ipict (fast-start windowed)))))
 
 (define (colorize-if b p c) (if b (colorize p c) p))
 
