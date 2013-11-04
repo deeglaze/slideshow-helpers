@@ -2,7 +2,6 @@
 (require pict
          pict/code
          pict/flash
-         slideshow/play
          unstable/gui/pict
          racket/draw
          (for-syntax syntax/parse)
@@ -11,6 +10,22 @@
          (only-in racket/contract/private/rand rand-choice)
          (only-in racket/contract/private/generate generate/direct)
          (only-in racket/contract/private/guts define/subexpression-pos-prop))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Copied from slideshow/play due to gui crap in documentation
+(define (fail-gracefully t)
+  (with-handlers ([exn:fail? (lambda (x) (values 0 0))])
+    (t)))
+(define (slide-pict base p p-from p-to n)
+  (let-values ([(x1 y1) (fail-gracefully (lambda () (lt-find base p-from)))]
+               [(x2 y2) (fail-gracefully (lambda () (lt-find base p-to)))])
+    (pin-over base
+              (+ x1 (* (- x2 x1) n))
+              (+ y1 (* (- y2 y1) n))
+              p)))
+(define (fast-start n)
+  (- 1 (* (- 1 n) (- 1 n))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define nonneg-real?
   (make-contract #:name 'nonnegative-real?
