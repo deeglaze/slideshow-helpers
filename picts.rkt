@@ -10,7 +10,7 @@
          (only-in racket/contract/private/rand rand-choice)
          (only-in racket/contract/private/generate generate/direct)
          (only-in racket/contract/private/guts define/subexpression-pos-prop))
-
+(provide regular-polygon-points)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Copied from slideshow/play due to gui crap in documentation
 (define (fail-gracefully t)
@@ -151,7 +151,10 @@
                          #:border-style pen-style/c)
                         pict?)]
                   [mk-center (real? real? pict? pict? . -> . (values real? real?))]
-                  [chop-at (real? real? real? . -> . real?)]
+                  [chop-at (->i ([min real?]
+                                 [max (min) (>/c min)]
+                                 [i real?])
+                                [result (min max) (real-in min max)])]
                   [chopped-interval-scale ((real-in 0 1) (real-in 0 1) . -> . ((real-in 0 1) . -> . (real-in 0 1)))]
                   [annulus
                    (->i ([w nonneg-real?]
@@ -183,6 +186,26 @@
                          #:n-points exact-positive-integer?
                          #:spike-fraction (real-in 0 1)
                          #:rotation real?]
+                        pict?)]
+                  [filled-polygon
+                   (->* ((listof (list/c real? real?)))
+                        [#:outline (or/c #f color/c)
+                                   #:outline-style pen-style/c
+                                   #:outline-width (real-in 0 255)
+                                   #:color (or/c #f color/c)
+                                   #:fill-style brush-style/c
+                                   #:scale-x real?
+                                   #:scale-y real?]
+                        pict?)]
+                  [filled-regular-polygon
+                   (->* (exact-positive-integer? nonneg-real?)
+                        [#:outline (or/c #f color/c)
+                         #:outline-style pen-style/c
+                         #:outline-width (real-in 0 255)
+                         #:color (or/c #f color/c)
+                         #:fill-style brush-style/c
+                         #:scale-x real?
+                         #:scale-y real?]
                         pict?)]
                   [slide-and-compose (->* (pict? (vectorof pict?) pict?)
                                           [(pict? (real-in 0 1) . -> . pict?)]
@@ -335,7 +358,7 @@
   (λ (unit-interval)
      (cond [(< unit-interval min) 0]
            [(> unit-interval max) 1]
-           [else (* 1/distance (- unit-interval min))])))
+           [else (chop-at 0 1 (* 1/distance (- unit-interval min)))])))
 
 ;; All picts in pict-vec must be in base, as well as from-pic.
 ;; comp : pict? (real-in 0 1) → pict?
@@ -411,6 +434,76 @@
        (blank))
    (colorize-if color flash color)
    pict))
+
+(define no-brush
+    (send the-brush-list find-or-create-brush "white" 'transparent))
+(define no-pen
+  (send the-pen-list find-or-create-pen "white" 0 'transparent))
+(define (filled-polygon points
+                        #:outline [outline #f]
+                        #:outline-style [outline-style 'solid]
+                        #:outline-width [width 1]
+                        #:color [color "black"]
+                        #:fill-style [fill-style 'solid]
+                        #:scale-x [scale-x 1]
+                        #:scale-y [scale-y 1])
+  (match points
+    ['() (blank)]
+    [(cons (list x0 y0) points)
+     (define p (new dc-path%))
+     (define fst (car points))
+     (send p move-to x0 y0)
+     (let loop ([points points])
+       (match points
+         ['() (void)]
+         [(cons (list x y) rest) (send p line-to x y) (loop rest)]))
+     (send p close)
+     (send p scale scale-x scale-y)
+     (define-values (bx by bw bh) (send p get-bounding-box))
+     (send p translate (/ width 2) (/ width 2))
+     (dc (λ (dc x y)
+            (with-save* dc ([get-brush set-brush
+                                       (if color
+                                           (send the-brush-list find-or-create-brush color fill-style)
+                                           no-brush)]
+                            [get-pen set-pen (if outline
+                                                 (send the-pen-list find-or-create-pen outline width outline-style)
+                                                 no-pen)])
+              (send dc draw-path p x y)))
+         (+ bw width) (+ bh width))]))
+
+(define (filled-regular-polygon side-length side-count
+                                #:outline [outline #f]
+                                #:outline-style [outline-style 'solid]
+                                #:outline-width [width 1]
+                                #:color [color "black"]
+                                #:fill-style [fill-style 'solid]
+                                #:scale-x [scale-x 1]
+                                #:scale-y [scale-y 1])
+  (define reg-points (regular-polygon-points side-length side-count))
+  (define-values (l t)
+    (for/fold ([l +inf.0] [t +inf.0]) ([p (in-list reg-points)])
+      (values (min l (first p)) (min t (second p)))))
+  (define points (for/list ([p (in-list reg-points)]) (list (- (first p) l) (- (second p) t))))
+  (filled-polygon points
+                  #:outline outline
+                  #:outline-style outline-style
+                  #:outline-width width
+                  #:color color
+                  #:fill-style fill-style
+                  #:scale-x scale-x
+                  #:scale-y scale-y))
+
+;; XXX: Yanked from 2htdp/image
+;; regular-polygon-points : number number -> (listof point)
+(define (regular-polygon-points side-length side-count)
+  (let loop ([p 0+0i]
+             [i 0])
+    (cond
+      [(= i side-count) '()]
+      [else (cons (list (real-part p) (imag-part p)) 
+                  (loop (+ p (make-polar side-length (* 2 pi (/ i side-count))))
+                        (+ i 1)))])))
 
 ;; n stage : natural
 ;; stages: monotonically non-decreasing list of naturals
