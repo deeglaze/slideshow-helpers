@@ -42,23 +42,27 @@
                              #'num
                              (length (syntax->list #'(stage-names ...)))))
      (define/with-syntax num-stages num-stages*)
+     (define/with-syntax the-anim
+       ;; BUG 14170: can't nest ?? to get this to look nice.
+       (if (attribute anim-at)
+           (quasitemplate (anim-info anim-at
+                                #,(syntax? (attribute skip-first))
+                                #,(syntax? (attribute skip-last))
+                                (?? steps 10)
+                                (?? delay 0.05)
+                                (?? name #f)
+                                (?? layout 'auto)))
+           #'#f))
      (define-values (id rhs)
        (normalize-definition
-        (quasitemplate (define header
-                    (staged-slide
-                     (λ (stage-id)
-                        (syntax-parameterize ([stage (make-rename-transformer #'stage-id)])
-                          (values (?? title #f) (let () body ...))))
-                     num-stages
-                     (?? (anim-info anim-at
-                                    #,(syntax? (attribute skip-first))
-                                    #,(syntax? (attribute skip-last))
-                                    #,(if (attribute steps) #'steps #'10)
-                                    #,(if (attribute delay) #'delay #'0.05)
-                                    #,(cond [(attribute name) #'name]
-                                            [else #'#f])
-                                    #,(if (attribute layout) #'layout #''auto))
-                         #f))))
+        (quasitemplate
+         (define header
+           (staged-slide
+            (λ (stage-id)
+               (syntax-parameterize ([stage (make-rename-transformer #'stage-id)])
+                 (values (?? title #f) (let () body ...))))
+            num-stages 
+            the-anim)))
         #'lambda #t #f))
      (with-syntax ([num-stages num-stages*])
        (quasisyntax/loc stx 
@@ -75,17 +79,18 @@
    (define do
      (match anim
        [(anim-info at-stage skip-first? skip-last? steps delay name layout)
-        (λ (i) (cond [(= i at-stage)
-                      (define-values (title pict) (fn i))
-                      (play pict
-                            #:steps steps
-                            #:delay delay
-                            #:name name
-                            #:layout layout
-                            #:skip-first? skip-first?
-                            #:title title)
-                      (unless skip-last? (slide ((fn i) 1.0)))]
-                     [else (simple i)]))]
+        (λ (i)
+           (cond [(= i at-stage)
+                  (define-values (title pict-fn) (fn i))
+                  (play pict-fn
+                        #:steps steps
+                        #:delay delay
+                        #:name name
+                        #:layout layout
+                        #:skip-first? skip-first?
+                        #:title title)
+                  (unless skip-last? (slide (pict-fn 1.0)))]
+                 [else (simple i)]))]
        [_ simple]))
    (if stage
        (do stage)
