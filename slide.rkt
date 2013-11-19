@@ -29,7 +29,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Convenience syntax for defining staged slides
 (struct anim-info (skip-first? skip-last? steps delay name layout))
-(struct staged-slide (stage->title×pict num-stages animation))
+;; Groups are for running different chunks of the stages, not necessarily in linear order.
+(struct staged-slide (stage->title×pict num-stages animation groups))
 (define-syntax (define/staged stx)
   (syntax-parse stx
     [(_ header (~or (~once (~or (~seq #:num-stages num:expr) (~seq #:stages [stage-names:id ...])))
@@ -45,7 +46,9 @@
                             (~optional (~seq #:steps steps:expr))
                             (~optional (~seq #:delay delay:expr))
                             (~optional (~seq #:name name:expr))
-                            (~optional (~seq #:layout layout:expr))) ...])) ...
+                            (~optional (~seq #:layout layout:expr))) ...])
+                    ;; some number of stage groups
+                    (~seq #:group [gname:id group-stages:expr ...])) ...
                                       body ...+)
      #:fail-unless (if (or (attribute skip-first)
                            (attribute skip-last)
@@ -54,10 +57,13 @@
                        (attribute anim-at)
                        #t)
      "Can only be given when an animation"
-     #:do [(define dup (and (attribute stage-names)
-                            (check-duplicate-identifier (attribute stage-names))))]
-     #:fail-when dup
-     (format "Duplicate stage name: ~a" dup)
+     #:do [(define stage-dup (and (attribute stage-names)
+                                  (check-duplicate-identifier (attribute stage-names))))
+           (define group-dup (check-duplicate-identifier (attribute gname)))]
+     #:fail-when stage-dup
+     (format "Duplicate stage name: ~a" stage-dup)
+     #:fail-when group-dup
+     (format "Duplicate stage group name: ~a" group-dup)
      (define num-stages* (if (attribute num)
                              #'num
                              (length (syntax->list #'(stage-names ...)))))
@@ -78,31 +84,51 @@
                   #,(or -delay #'0.05)
                   #,(or -name #'#f)
                   #,(or -layout #''auto)))))
+     (define-syntax if-named
+       (syntax-rules ()
+         [(_ e) (if (attribute stage-names) (list e) '())]
+         [(_ t e) (if (attribute stage-names) t e)]))
      (define-values (id rhs)
        (normalize-definition
         (quasitemplate
          (define header
            (staged-slide
-            (λ (stage-id)
-               #,@(if (attribute stage-names)
-                      #'((define the-stage-name (vector-ref the-stage-names stage-id)))
-                      #'())
+            (λ (stage-id*)
+               (define-values (stage-id #,@(if-named #'the-stage-name))
+                 (if (symbol? stage-id*)
+                     #,(if-named
+                        #'(values (hash-ref the-name-indexes stage-id*) stage-id*)
+                        #'(error 'run-stages "Staged slide has unnamed stages: ~a" stage-id*))
+                     (values stage-id*
+                             #,@(if-named
+                                 ;; only give a name if within bounds
+                                 #'(and (fixnum? stage-id*)
+                                         (<= 0 stage-id*) (< stage-id* num-stages)
+                                         (vector-ref the-stage-names stage-id*))))))
                (syntax-parameterize ([stage (make-rename-transformer #'stage-id)]
                                      [stage-name (make-rename-transformer #'the-stage-name)])
                  (values (?? title #f) (let () body ...))))
             num-stages
-            (hash-no-dups the-anims ... ...))))
+            (hash-no-dups the-anims ... ...)
+            (hash (?@ gname (list group-stages ...)) ...))))
         #'lambda #t #f))
-     (with-syntax ([num-stages num-stages*])
-       (quasisyntax/loc stx 
-         (splicing-let-values (#,@(if (attribute stage-names)
-                                      #`([(stage-names ...) (values #,@(range num-stages*))]
-                                         [(the-stage-names) '#(stage-names ...)])
-                                      #'()))
-           (define #,id #,rhs))))]))
+     (quasisyntax/loc stx 
+       (splicing-let-values
+           #,(if-named
+              #`([(stage-names ...) (values #,@(range num-stages*))]
+                 [(the-stage-names) '#(stage-names ...)]
+                 ;; for nicer lookup when giving stages in run-stages
+                 [(the-name-indexes) (hash #,@(append*
+                                               (for/list ([name (in-list (syntax->list #'(stage-names ...)))]
+                                                          [i (in-naturals)])
+                                                 (list #`(quote #,name) i))))])
+              #'())
+         (define #,id #,rhs)))]))
 
-(define/match (run-stages v #:stage [stage #f])
-  [((staged-slide fn num anims) _)
+(define/match (run-stages v #:stage [stage #f] #:group [group #f])
+  [((staged-slide fn num anims groups) _ _)
+   (when (and stage group)
+     (error 'run-stages "Cannot give both stage and group to run."))
    (define (do i)
      (match (hash-ref anims i #f)
        [(anim-info skip-first? skip-last? steps delay name layout)
@@ -117,6 +143,15 @@
         (unless skip-last? (slide #:title title (pict-fn 1.0)))]
        [_ (define-values (title pict) (fn i))
           (slide #:title title pict)]))
-   (cond [(number? stage) (do stage)]
+   (define (do-group name)
+     (match (hash-ref groups name #f)
+       [(? list? stages) (for-each do stages)]
+       [_ (error 'run-stages "Unknown group: ~a" name)]))
+   (cond [(real? stage)
+          ;; XXX: could cause undesired errors, but out of bounds inputs
+          ;; might be the user's desire.
+          (do stage)]
          [(list? stage) (for-each do stage)]
+         [(symbol? group) (do-group group)]
+         [(list? group) (for-each do-group group)]
          [else (for ([i num]) (do i))])])
