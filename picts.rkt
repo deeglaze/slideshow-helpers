@@ -219,10 +219,13 @@
 (begin-for-syntax
  (define-syntax-class (gsr dc-stx)
    #:attributes (g s do)
-   (pattern [g:id s:id (~optional (~seq #:if guard:expr)) r:expr ...]
-            #:with do (if (attribute guard)
-                          #`(unless guard (send #,dc-stx s r ...))
-                          #`(send #,dc-stx s r ...)))))
+   (pattern [g:id s:id (~optional (~seq (~or (~and #:unless (~bind [guarder #'unless]))
+                                             (~and #:when (~bind [guarder #'when])))
+                                        guard:expr))
+                  r:expr ...]
+            #:with do (cond
+                       [(attribute guard) #`(guarder guard (send #,dc-stx s r ...))]
+                       [else #`(send #,dc-stx s r ...)]))))
 (define-simple-macro (with-save dc (~var p (gsr #'dc)) body ...)
   (let* ([dcv dc]
          [v (send dcv p.g)])
@@ -374,7 +377,10 @@
         (dc (λ (dc dx dy) 
               (with-save* dc ([get-brush set-brush
                                          (send the-brush-list find-or-create-brush color style)]
-                              [get-pen set-pen #:if border-color border-color border-width border-style])
+                              [get-pen set-pen #:when border-color
+                                       (send the-pen-list find-or-create-pen
+                                             border-color 
+                                             border-width border-style)])
                 (send dc draw-path dc-path (- dx x) (- dy y))))
             w h))))
 
