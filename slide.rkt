@@ -48,7 +48,7 @@
                             (~optional (~seq #:name name:expr))
                             (~optional (~seq #:layout layout:expr))) ...])
                     ;; some number of stage groups
-                    (~seq #:group [gname:id group-stages:expr ...])) ...
+                    (~seq #:group gname:id [group-stages:expr ...])) ...
                                       body ...+)
      #:fail-unless (if (or (attribute skip-first)
                            (attribute skip-last)
@@ -110,7 +110,7 @@
                  (values (?? title #f) (let () body ...))))
             num-stages
             (hash-no-dups the-anims ... ...)
-            (hash (?@ gname (list group-stages ...)) ...))))
+            (hash (?@ 'gname (list group-stages ...)) ...))))
         #'lambda #t #f))
      (quasisyntax/loc stx 
        (splicing-let-values
@@ -145,9 +145,10 @@
           (slide #:title title pict)]))
    (define (do-group name)
      (match (hash-ref groups name #f)
-       [(? list? stages) (for-each do stages)]
+       [(? list? stages)
+        (for-each do stages)]
        [_ (error 'run-stages "Unknown group: ~a" name)]))
-   (cond [(real? stage)
+   (cond [(or (real? stage) (symbol? stage))
           ;; XXX: could cause undesired errors, but out of bounds inputs
           ;; might be the user's desire.
           (do stage)]
