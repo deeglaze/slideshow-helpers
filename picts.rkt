@@ -140,6 +140,7 @@
                                  [max (min) (>/c min)]
                                  [i real?])
                                 [result (min max) (real-in min max)])]
+                  [lerp (real? real? (real-in 0 1) . -> . real?)]
                   [chopped-interval-scale ((real-in 0 1) (real-in 0 1) . -> . ((real-in 0 1) . -> . (real-in 0 1)))]
                   [annulus
                    (->i ([w nonneg-real?]
@@ -316,6 +317,9 @@
             (+ x x-translate)
             (- y (/ (pict-height pict) 2))
             pict))
+
+;; Linearly interpolate from start to end
+(define (lerp start end n) (+ (* n end) (* start (- 1 n))))
 
 (define (pin-over-hcenter base dx dy pict #:y-translate [y-translate 0])
   (define-values (x y)
