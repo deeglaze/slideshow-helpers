@@ -101,6 +101,7 @@
 (provide/contract [list*of contract?]
                   [colorize-if (any/c pict? color/c . -> . pict?)]
                   [pin-over-center (pict? real? real? pict? . -> . pict?)]
+                  [pin-under-center (pict? real? real? pict? . -> . pict?)]
                   [pin-over-vcenter (->* (pict? (or/c pict? real?) (or/c procedure? real?) pict?)
                                          [#:x-translate real?]
                                          pict?)]
@@ -301,12 +302,16 @@
     (define-values (dx* dy*) (mk-center dx dy p pict))
     (pin-under pict* dx* dy* pict)))
 
-;; Pin the center of pict at dx dy offset from base's top left corner.
-(define (pin-over-center base dx dy pict)
-  (pin-over base
+(define (pin-center pinner base dx dy pict)
+  (pinner base
             (- dx (/ (pict-width pict) 2))
             (- dy (/ (pict-height pict) 2))
             pict))
+;; Pin the center of pict at dx dy offset from base's top left corner.
+(define (pin-over-center base dx dy pict)
+  (pin-center pin-over base dx dy pict))
+(define (pin-under-center base dx dy pict)
+  (pin-center pin-under base dx dy pict))
 
 (define (pin-over-vcenter base dx dy pict #:x-translate [x-translate 0])
   (define-values (x y)
@@ -527,7 +532,7 @@
 
 (define (pin-at-tag pin base finder tag pict-fn)
   (define path (find-tag base tag))
-  (pin base path finder (pict-fn (first path))))
+  (pin base (first path) finder (pict-fn (first path))))
 
 (define (pin-under-tag base finder tag pict-fn)
   (pin-at-tag pin-under base finder tag pict-fn))
