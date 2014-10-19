@@ -102,10 +102,10 @@
                   [colorize-if (any/c pict? color/c . -> . pict?)]
                   [pin-over-center (pict? real? real? pict? . -> . pict?)]
                   [pin-under-center (pict? real? real? pict? . -> . pict?)]
-                  [pin-over-vcenter (->* (pict? (or/c pict? real?) (or/c procedure? real?) pict?)
+                  [pin-over-vcenter (->* (pict? (or/c pict? real? pict-path?) (or/c procedure? real?) pict?)
                                          [#:x-translate real?]
                                          pict?)]
-                  [pin-over-hcenter (->* (pict? (or/c pict? real?) (or/c procedure? real?) pict?)
+                  [pin-over-hcenter (->* (pict? (or/c pict? real? pict-path?) (or/c procedure? real?) pict?)
                                          [#:y-translate real?]
                                          pict?)]
                   [both ((boolean? . -> . void?) . -> . void?)]
@@ -153,6 +153,15 @@
                          #:border-color [border-color (or/c #f color/c)]
                          #:border-style [border-style pen-style/c]]
                         [result pict?])]
+                  [arc
+                   (->* (nonneg-real? nonneg-real?)
+                        [real? real? any/c
+                         #:color (or/c #f color/c)
+                         #:style brush-style/c
+                         #:border-width (real-in 0 255)
+                         #:border-color (or/c #f color/c)
+                         #:border-style pen-style/c]
+                        pict?)]
                   [filled-rounded-rectangle-frame
                    (->* (pict?)
                         [#:color color/c
@@ -284,6 +293,30 @@
         (with-save* dc ([get-brush set-brush brush]
                         [get-pen set-pen pen])
           (send dc draw-path p)))
+      w h))
+
+(define (arc w h [startθ 0] [endθ pi] [counter-clockwise? #t]
+             #:color [color #f]
+             #:style [style 'solid]
+             #:border-color [border-color #f]
+             #:border-width [border-width 1]
+             #:border-style [border-style 'solid])
+  (dc (lambda (dc x y)
+        (define p (new dc-path%))
+        (send p arc 0 0 w h startθ endθ counter-clockwise?)
+        (send p line-to (/ w 2) (/ h 2))
+        (send p translate x y)
+        (send p close)
+        
+        (define brush (if color
+                          (send the-brush-list find-or-create-brush color style)
+                          (send the-brush-list find-or-create-brush "white" 'transparent)))
+        (define pen (if border-color
+                        (send the-pen-list find-or-create-pen border-color border-width border-style)
+                        (send the-pen-list find-or-create-pen "black" 1 'transparent)))
+        (with-save* dc ([get-brush set-brush brush]
+                        [get-pen set-pen pen])
+                    (send dc draw-path p)))
       w h))
 
 (define (mk-center x y base top)
