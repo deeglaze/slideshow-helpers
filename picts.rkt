@@ -137,6 +137,10 @@
                          #:border-style pen-style/c)
                         pict?)]
                   [mk-center (real? real? pict? pict? . -> . (values real? real?))]
+                  [compose-find (-> (-> pict? pict-path? (values real? real?))
+                                    (-> pict? pict-path? (values real? real?))
+                                    pict?
+                                    (-> pict? pict-path? (values real? real?)))]
                   [chop-at (->i ([min real?]
                                  [max (min) (>/c min)]
                                  [i real?])
@@ -571,3 +575,10 @@
   (pin-at-tag pin-under base finder tag pict-fn))
 (define (pin-over-tag base finder tag pict-fn)
   (pin-at-tag pin-over base finder tag pict-fn))
+
+;; like cc-find, only offset from 
+(define (compose-find find other-find wrt)
+  (λ (pict pict-path)
+     (define-values (x y) (find pict pict-path))
+     (define-values (wx wy) (other-find wrt (list wrt)))
+     (values (- x wx) (- y wy))))
