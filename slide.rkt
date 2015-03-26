@@ -251,4 +251,5 @@
          [(list? group) (for-each do-group group)]
          [else (for ([i num]) (do i))])]
   ;; Not a staged-slide, but just a thunk that makes a slide.
-  [(? procedure? p) (p)])
+  [((? procedure? p) _ _)
+   (p)])
